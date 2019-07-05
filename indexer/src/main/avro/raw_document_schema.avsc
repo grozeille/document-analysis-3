@@ -1,0 +1,15 @@
+{
+  "type" : "record",
+  "name" : "RawDocument",
+  "namespace" : "fr.grozeille.avro",
+  "fields" : [ {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "body",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  } ]
+}

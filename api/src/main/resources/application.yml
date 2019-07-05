@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: document-analysis
+
+server:
+  port: 9000

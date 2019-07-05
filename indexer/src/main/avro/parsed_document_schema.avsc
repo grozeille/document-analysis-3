@@ -1,0 +1,24 @@
+{
+  "type" : "record",
+  "name" : "ParsedDocument",
+  "namespace" : "fr.grozeille.avro",
+  "fields" : [ {
+    "name" : "path",
+    "type" : "string"
+  }, {
+     "name" : "md5",
+     "type" : "string"
+   }, {
+    "name" : "name",
+    "type" : "string"
+  }, {
+    "name" : "extension",
+    "type" : "string"
+  }, {
+    "name" : "lang",
+    "type" : "string"
+  }, {
+    "name" : "body",
+    "type" : "string"
+  }]
+}
