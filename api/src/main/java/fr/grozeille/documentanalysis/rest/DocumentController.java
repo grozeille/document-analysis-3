@@ -42,6 +42,7 @@ public class DocumentController {
     @Autowired
     private SolrOperations solrOperations;
 
+    @Autowired
     private DB db;
 
     private ConcurrentMap<String, String> translationCache;
@@ -52,19 +53,9 @@ public class DocumentController {
     public void init() {
         translate = TranslateOptions.getDefaultInstance().getService();
 
-        db = DBMaker
-                .fileDB("translationCache.db")
-                .fileMmapEnable()
-                .make();
         translationCache = db
                 .hashMap("translationCache", Serializer.STRING, Serializer.STRING)
                 .createOrOpen();
-    }
-
-    @PreDestroy
-    public void preDestroy() {
-        db.commit();
-        db.close();
     }
 
     @ApiOperation(
@@ -91,6 +82,7 @@ public class DocumentController {
 
             queryTranslated = translation.getTranslatedText();
             translationCache.putIfAbsent(query, queryTranslated);
+            db.commit();
             log.info("Google Translation of "+query+": "+queryTranslated);
         }
         else {

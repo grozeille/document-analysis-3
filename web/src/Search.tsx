@@ -82,6 +82,7 @@ interface SearchState {
   showMore: boolean;
   currentPage: number;
   searchQuery: string;
+  apiUrl: string;
 }
 
 class Search extends React.Component<any, SearchState> {
@@ -96,12 +97,31 @@ class Search extends React.Component<any, SearchState> {
       showMore: false,
       currentPage: 0,
       searchQuery: "",
+      apiUrl: "",
     };
     
   }
 
   componentDidMount(){
     this.searchInput!.focus(); 
+
+    var configUrl = "/config.json";
+
+    fetch(configUrl)
+        .then(res => res.json())
+        .then(
+          (result) => {
+            this.setState({
+              apiUrl : result.apiUrl,
+            });
+          },
+          // Note: it's important to handle errors here
+          // instead of a catch() block so that we don't swallow
+          // exceptions from actual bugs in components.
+          (error) => {
+            console.error(error);
+          }
+        )
   }
 
   render() {
@@ -155,7 +175,11 @@ class Search extends React.Component<any, SearchState> {
 
     var nextPage = this.state.currentPage + 1;
 
-    fetch("http://localhost:9000/api/v1/documents/?query=" + encodeURIComponent(this.state.searchQuery) + "&page=" + nextPage)
+    var url = this.state.apiUrl + 
+      "/v1/documents/?query=" + encodeURIComponent(this.state.searchQuery) + 
+      "&page=" + nextPage;
+
+    fetch(url)
         .then(res => res.json())
         .then(
           (result) => {
@@ -203,7 +227,9 @@ class Search extends React.Component<any, SearchState> {
       })
 
 
-      fetch("http://localhost:9000/api/v1/documents/?query=" + encodeURIComponent(query))
+      var url = this.state.apiUrl + "/v1/documents/?query=" + encodeURIComponent(query);
+
+      fetch(url)
         .then(res => res.json())
         .then(
           (result) => {
