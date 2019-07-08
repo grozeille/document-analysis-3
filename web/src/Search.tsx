@@ -82,7 +82,6 @@ interface SearchState {
   showMore: boolean;
   currentPage: number;
   searchQuery: string;
-  apiUrl: string;
 }
 
 class Search extends React.Component<any, SearchState> {
@@ -96,32 +95,13 @@ class Search extends React.Component<any, SearchState> {
       searchMessage: "",
       showMore: false,
       currentPage: 0,
-      searchQuery: "",
-      apiUrl: "",
+      searchQuery: ""
     };
     
   }
 
   componentDidMount(){
     this.searchInput!.focus(); 
-
-    var configUrl = "/config.json";
-
-    fetch(configUrl)
-        .then(res => res.json())
-        .then(
-          (result) => {
-            this.setState({
-              apiUrl : result.apiUrl,
-            });
-          },
-          // Note: it's important to handle errors here
-          // instead of a catch() block so that we don't swallow
-          // exceptions from actual bugs in components.
-          (error) => {
-            console.error(error);
-          }
-        )
   }
 
   render() {
@@ -175,8 +155,7 @@ class Search extends React.Component<any, SearchState> {
 
     var nextPage = this.state.currentPage + 1;
 
-    var url = this.state.apiUrl + 
-      "/v1/documents/?query=" + encodeURIComponent(this.state.searchQuery) + 
+    var url = "/api/v1/documents/?query=" + encodeURIComponent(this.state.searchQuery) + 
       "&page=" + nextPage;
 
     fetch(url)
@@ -227,7 +206,7 @@ class Search extends React.Component<any, SearchState> {
       })
 
 
-      var url = this.state.apiUrl + "/v1/documents/?query=" + encodeURIComponent(query);
+      var url =  "/api/v1/documents/?query=" + encodeURIComponent(query);
 
       fetch(url)
         .then(res => res.json())

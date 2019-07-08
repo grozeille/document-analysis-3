@@ -10,8 +10,5 @@ RUN chmod +x /entrypoint.sh
 COPY ./web/build/ /usr/share/nginx/html/
 
 EXPOSE 80
-EXPOSE 443
-
-ENV API_URL=http://localhost:9000/api
 
 ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
