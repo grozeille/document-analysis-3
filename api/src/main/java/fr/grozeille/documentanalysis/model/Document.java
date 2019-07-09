@@ -10,5 +10,7 @@ public class Document {
 
     private String url;
 
+    private String urlTxt;
+
     private String body;
 }

@@ -104,29 +104,19 @@ public class DocumentIndexer {
                     }
                     String bodyText = bodyTextBuilder.toString();
 
-                    // find if already indexed
-                    SolrDocument solrExistingDocument = httpSolrClient.getById(path);
-                    String existingMd5 = "";
-                    if(solrExistingDocument != null) {
-                        existingMd5 = (String)solrExistingDocument.get("md5_s");
+                    solrDocument.addField("id", path);
+                    solrDocument.addField("path_descendent_path", path);
+                    solrDocument.addField("path_txt", path);
+                    solrDocument.addField("name_s", name);
+                    solrDocument.addField("name_txt", name);
+                    solrDocument.addField("extension_s", extension);
+                    solrDocument.addField("md5_s", md5);
+                    solrDocument.addField("body_txt", bodyText);
+                    solrDocument.addField("lang_s", lang);
+                    if(!Strings.isNullOrEmpty(lang)) {
+                        solrDocument.addField("body_txt_"+lang, bodyText);
                     }
-                    if(existingMd5.equalsIgnoreCase(md5)) {
-                        // no need to re-extract the text
-                        log.info("Document already indexed and up to date " + path);
-                    }
-                    else {
-                        solrDocument.addField("id", path);
-                        solrDocument.addField("path_descendent_path", path);
-                        solrDocument.addField("name_s", name);
-                        solrDocument.addField("extension_s", extension);
-                        solrDocument.addField("md5_s", md5);
-                        solrDocument.addField("body_txt", bodyText);
-                        solrDocument.addField("lang_s", lang);
-                        if(!Strings.isNullOrEmpty(lang)) {
-                            solrDocument.addField("body_txt_"+lang, bodyText);
-                        }
-                        solrBatch.add(solrDocument);
-                    }
+                    solrBatch.add(solrDocument);
 
                     if(solrBatch.size() >= batchSize) {
                         httpSolrClient.add(solrBatch);

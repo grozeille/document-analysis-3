@@ -28,10 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
@@ -77,10 +74,16 @@ public class DocumentController {
                             Translate.TranslateOption.sourceLanguage("en"),
                             Translate.TranslateOption.targetLanguage("sv"),
                             // Use "base" for standard edition, "nmt" for the premium model.
-                            Translate.TranslateOption.model("base"),
+                            Translate.TranslateOption.model("nmt"),
                             Translate.TranslateOption.format("text"));
 
             queryTranslated = translation.getTranslatedText();
+
+            // bug in google side ?
+            // https://stackoverflow.com/questions/40505999/getting-weird-markup-from-google-translate-like-pos-trunc
+            queryTranslated = queryTranslated.replace("~~POS=HEADCOMP", "");
+            queryTranslated = queryTranslated.replace("~~POS=TRUNC", "");
+
             translationCache.putIfAbsent(query, queryTranslated);
             db.commit();
             log.info("Google Translation of "+query+": "+queryTranslated);
@@ -89,30 +92,58 @@ public class DocumentController {
             log.info("Translation from cache of "+query+": "+queryTranslated);
         }
 
-        SolrQuery solrQuery = new SolrQuery("body_txt:("+query+" OR "+queryTranslated+")");
-        solrQuery.addHighlightField("body_txt");
+        String bodyQuery = "body_txt_en:"+query+" OR body_txt_sv:"+queryTranslated;
+        String nameQuery = "name_txt:"+query+" OR name_txt:"+queryTranslated;
+        String pathQuery = "path_txt:"+query+" OR path_txt:"+queryTranslated;
+
+        SolrQuery solrQuery = new SolrQuery(String.join(" OR ", Arrays.asList(bodyQuery, nameQuery, pathQuery)));
+        solrQuery.addHighlightField("body_txt_en");
+        solrQuery.addHighlightField("body_txt_sv");
+        solrQuery.addHighlightField("name_txt");
+        solrQuery.addHighlightField("path_txt");
         solrQuery.setHighlight(true);
+        solrQuery.setHighlightFragsize(512);
+        // priority to name and path
+        solrQuery.set("defType","edismax");
+        solrQuery.set("bq",String.join(" OR ", Arrays.asList(nameQuery, pathQuery)));
+        solrQuery.set("qf","body_txt_en^1.0 body_txt_sv^1.0 name_txt^4.0 path_txt^3.0");
         solrQuery.setStart(page * pageSize);
         solrQuery.setRows(pageSize);
 
         QueryResponse response = solrOperations.getSolrClient().query("mycore", solrQuery);
 
-        Map<String, Document> resultMap = new HashMap<>();
+        Map<String, Document> resultMap = new LinkedHashMap<>();
         for(SolrDocument d : response.getResults()) {
             Document document = new Document();
             document.setId(d.get("id").toString());
 
             document.setName(d.get("name_s").toString());
             document.setUrl(d.get("id").toString());
+            document.setUrlTxt(document.getUrl());
 
             resultMap.put(d.get("id").toString(), document);
         }
 
         for(Map.Entry<String, Map<String, List<String>>> h : response.getHighlighting().entrySet()) {
             Document document = resultMap.get(h.getKey());
-            List<String> highlights = h.getValue().get("body_txt");
+            List<String> highlights = h.getValue().get("body_txt_en");
             if(highlights != null && !highlights.isEmpty()) {
                 document.setBody(highlights.get(0));
+            }
+            else {
+                highlights = h.getValue().get("body_txt_sv");
+                if(highlights != null && !highlights.isEmpty()) {
+                    document.setBody(highlights.get(0));
+                }
+            }
+
+            highlights = h.getValue().get("name_txt");
+            if(highlights != null && !highlights.isEmpty()) {
+                document.setName(highlights.get(0));
+            }
+            highlights = h.getValue().get("path_txt");
+            if(highlights != null && !highlights.isEmpty()) {
+                document.setUrlTxt(highlights.get(0));
             }
         }
 

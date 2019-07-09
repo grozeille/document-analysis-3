@@ -18,6 +18,7 @@ interface SearchResult {
 interface SearchResultItem {
   id: string;
   url: string;
+  urlTxt: string;
   name: string;
   body: string;
 }
@@ -51,6 +52,9 @@ const styles = (theme: Theme) => ({
     '&:hover': {
       textDecoration: 'underline',
     },
+    '& em': {
+      backgroundColor: "#ffffcc",
+    },
   },
   searchUrl: {
     color: theme.palette.primary.dark,
@@ -58,6 +62,9 @@ const styles = (theme: Theme) => ({
     cursor: "pointer",
     '&:hover': {
       textDecoration: 'underline',
+    },
+    '& em': {
+      backgroundColor: "#ffffcc",
     },
   },
   searchText: {
@@ -124,8 +131,8 @@ class Search extends React.Component<any, SearchState> {
           <div key={pageKey}>
           {page.map((item: SearchResultItem, key: any) =>
               <div className={this.props.classes.searchItem} key={key}>
-                <div><a className={this.props.classes.searchTitle} href={ "file://" + item.url} target="_blank">{item.name}</a></div>
-                <div><a className={this.props.classes.searchUrl} href={ "file://" + item.url} target="_blank">{item.url}</a></div>
+                <div><a className={this.props.classes.searchTitle} href={ "file://" + item.url} target="_blank" rel="noopener noreferrer" dangerouslySetInnerHTML={{ __html: item.name }}></a></div>
+                <div><a className={this.props.classes.searchUrl} href={ "file://" + item.url} target="_blank" rel="noopener noreferrer" dangerouslySetInnerHTML={{ __html: item.urlTxt }}></a></div>
                 <div className={this.props.classes.searchText} dangerouslySetInnerHTML={{ __html: item.body }}></div>
               </div>
           )}
