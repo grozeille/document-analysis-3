@@ -21,6 +21,8 @@ import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.solr.core.SolrOperations;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +32,7 @@ import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
@@ -118,7 +121,7 @@ public class DocumentController {
             document.setId(d.get("id").toString());
 
             document.setName(d.get("name_s").toString());
-            document.setUrl(d.get("id").toString());
+            document.setUrl(d.get("path_descendent_path").toString());
             document.setUrlTxt(document.getUrl());
 
             resultMap.put(d.get("id").toString(), document);
@@ -151,11 +154,72 @@ public class DocumentController {
         searchResult.setNumFound(response.getResults().getNumFound());
         searchResult.setDocuments(resultMap.values().toArray(new Document[0]));
 
-        return ResponseEntity.status(200).body(searchResult);
+        CacheControl cacheControl = CacheControl.maxAge(30, TimeUnit.SECONDS).cachePrivate();
+
+        return ResponseEntity
+                .status(200)
+                .lastModified(System.currentTimeMillis())
+                .cacheControl(cacheControl)
+                .body(searchResult);
     }
 
-    @GetMapping(name="/{id}", produces = "application/json")
-    public @ResponseBody String getDocument(@PathVariable int id) {
-        return null;
+    @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE,
+            method = RequestMethod.GET,
+            value = "/{id}")
+    public @ResponseBody ResponseEntity<Document> getDocument(@PathVariable String id) throws IOException, SolrServerException {
+
+        try {
+            SolrDocument d = solrOperations.getSolrClient().getById("mycore", id);
+
+            Document document = new Document();
+            document.setId(d.get("id").toString());
+
+            document.setName(d.get("name_s").toString());
+            document.setUrl(d.get("path_descendent_path").toString());
+            document.setUrlTxt(document.getUrl());
+            document.setBody("");
+
+            return ResponseEntity.ok(document);
+        } catch(SolrServerException e) {
+            return ResponseEntity.notFound().build();
+        }
+
+    }
+
+    @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE,
+            method = RequestMethod.GET,
+            value = "/{id}/same")
+    public @ResponseBody ResponseEntity<SearchResult> getSameDocument(@PathVariable String id) throws IOException, SolrServerException {
+
+        try {
+            SolrDocument foundDocument = solrOperations.getSolrClient().getById("mycore", id);
+
+            SolrQuery solrQuery = new SolrQuery("name_s:\""+foundDocument.getFieldValue("name_s").toString()+"\"");
+            QueryResponse response = solrOperations.getSolrClient().query("mycore", solrQuery);
+
+            List<Document> documents = new ArrayList<>();
+            for(SolrDocument d : response.getResults()) {
+                Document document = new Document();
+                document.setId(d.get("id").toString());
+
+                document.setName(d.get("name_s").toString());
+                document.setUrl(d.get("path_descendent_path").toString());
+                document.setUrlTxt(document.getUrl());
+                document.setBody("");
+
+                if(!document.getId().equalsIgnoreCase(id)) {
+                    documents.add(document);
+                }
+            }
+
+            SearchResult result = new SearchResult();
+            result.setNumFound(response.getResults().getNumFound());
+            result.setDocuments(documents.toArray(new Document[0]));
+
+            return ResponseEntity.ok(result);
+        } catch(SolrServerException e) {
+            return ResponseEntity.notFound().build();
+        }
+
     }
 }

@@ -7,6 +7,7 @@ import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.cli.*;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -23,6 +24,8 @@ import java.util.List;
 public class DocumentIndexer {
 
     public static void main(String[] args) throws Exception {
+
+        // to clean all: curl http://beebox02:8983/solr/mycore/update?commit=true -H "Content-Type: text/xml" --data-binary '<delete><query>*:*</query></delete>'
 
         Option inputOption  = OptionBuilder.withArgName( "input" )
                 .isRequired()
@@ -82,6 +85,8 @@ public class DocumentIndexer {
             try(DataFileReader<GenericRecord> dataFileReader = new DataFileReader<>(inputFile, reader)) {
                 for(GenericRecord inputDocument : dataFileReader) {
 
+                    String id = DigestUtils.sha256Hex(inputDocument.get("path").toString());
+
                     SolrInputDocument solrDocument = new SolrInputDocument();
                     String path = inputDocument.get("path").toString();
                     String md5 = inputDocument.get("md5").toString();
@@ -104,7 +109,7 @@ public class DocumentIndexer {
                     }
                     String bodyText = bodyTextBuilder.toString();
 
-                    solrDocument.addField("id", path);
+                    solrDocument.addField("id", id);
                     solrDocument.addField("path_descendent_path", path);
                     solrDocument.addField("path_txt", path);
                     solrDocument.addField("name_s", name);

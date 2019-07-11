@@ -17,19 +17,21 @@ import Grid from '@material-ui/core/Grid';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
-
 import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '@material-ui/icons/Settings';
-
 import { ThemeProvider } from '@material-ui/styles';
-import { makeStyles, createMuiTheme } from '@material-ui/core/styles';
+import { Theme } from "@material-ui/core";
+import { makeStyles, createMuiTheme, withStyles } from '@material-ui/core/styles';
 import blue from '@material-ui/core/colors/blue';
-
+import { createBrowserHistory } from 'history';
 import { secondaryListItems } from './SecondaryMenu';
 import Search from './Search';
+import { SearchState } from './Search';
+import { SearchResultItem, SearchResult } from './Model'
 import Settings from './Settings';
+import Preview from './Preview';
 
 const theme = createMuiTheme({
   palette: {
@@ -39,7 +41,7 @@ const theme = createMuiTheme({
 
 const drawerWidth = 240;
 
-const useStyles = makeStyles(theme => ({
+const styles = (theme: Theme) => ({
   root: {
     display: 'flex',
   },
@@ -77,9 +79,18 @@ const useStyles = makeStyles(theme => ({
   title: {
     flexGrow: 1,
   },
+  appBarSpacer: theme.mixins.toolbar,
+  content: {
+    flexGrow: 1,
+    height: '100vh',
+    overflow: 'auto',
+  },
+  fixedHeight: {
+    height: 240,
+  },
   drawerPaper: {
-    position: 'relative',
-    whiteSpace: 'nowrap',
+    position: "relative" as 'relative',
+    whiteSpace: 'nowrap' as 'nowrap',
     width: drawerWidth,
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
@@ -87,7 +98,7 @@ const useStyles = makeStyles(theme => ({
     }),
   },
   drawerPaperClose: {
-    overflowX: 'hidden',
+    overflowX: 'hidden' as 'hidden',
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
@@ -97,104 +108,114 @@ const useStyles = makeStyles(theme => ({
       width: theme.spacing(9),
     },
   },
-  appBarSpacer: theme.mixins.toolbar,
-  content: {
-    flexGrow: 1,
-    height: '100vh',
-    overflow: 'auto',
-  },
   container: {
     paddingTop: theme.spacing(4),
     paddingBottom: theme.spacing(4),
+    overflowScrolling: "touch" as 'touch',
+    WebkitOverflowScrolling: "touch" as 'touch',
   },
   paper: {
     padding: theme.spacing(2),
     display: 'flex',
     overflow: 'auto',
-    flexDirection: 'column',
+    flexDirection: 'column' as 'column',
   },
-  fixedHeight: {
-    height: 240,
-  },
-}));
-function App() {
-  const classes = useStyles();
-  const [open, setOpen] = React.useState(false);
-  const handleDrawerOpen = () => {
-    setOpen(true);
-  };
-  const handleDrawerClose = () => {
-    setOpen(false);
-  };
-  const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
+});
 
-  return (
-    <Router>
-      <ThemeProvider theme={theme}>
-    <div className={classes.root}>
-      <CssBaseline />
-      <AppBar position="absolute" className={clsx(classes.appBar, open && classes.appBarShift)}>
-        <Toolbar className={classes.toolbar}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="Open drawer"
-            onClick={handleDrawerOpen}
-            className={clsx(classes.menuButton, open && classes.menuButtonHidden)}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
-            Documents
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Drawer
-        variant="permanent"
-        classes={{
-          paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose),
-        }}
-        open={open}
-      >
-        <div className={classes.toolbarIcon}>
-          <IconButton onClick={handleDrawerClose}>
-            <ChevronLeftIcon />
-          </IconButton>
-        </div>
-        <Divider />
-        <List>
-          <ListItem button component={Link} to="/">
-            <ListItemIcon>
-              <SearchIcon />
-            </ListItemIcon>
-            <ListItemText primary="Recherche" />
-          </ListItem>
-          <ListItem button component={Link} to="/settings">
-            <ListItemIcon>
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary="Paramétrage" />
-          </ListItem>
-        </List>
-        <Divider />
-        <List>{secondaryListItems}</List>
-      </Drawer>
-      <main className={classes.content}>
-        <div className={classes.appBarSpacer} />
-        <Container maxWidth="lg" className={classes.container}>
-          <Grid container spacing={3}>
-            {/* Recent Orders */}
-            <Grid item xs={12}>
-                <Route path="/" exact component={Search} />
-                <Route path="/settings/" component={Settings} />
-            </Grid>
-          </Grid>
-        </Container>
-      </main>
-    </div>
-    </ThemeProvider>
-    </Router>
-  );
+
+interface AppState {
+  open: boolean;
 }
 
-export default App;
+class App extends React.Component<any, AppState> {
+
+  constructor(props: any) {
+    super(props);
+    this.state = { 
+      open : false,
+    };
+  }
+
+  handleDrawerClose() {
+    this.setState({ open : false});
+  }
+
+  handleDrawerOpen() {
+    this.setState({ open : true});
+  }
+
+  render() {
+    
+    return (
+      <Router>
+        <ThemeProvider theme={theme}>
+      <div className={this.props.classes.root}>
+        <CssBaseline />
+        <AppBar position="absolute" className={clsx(this.props.classes.appBar, this.state.open && this.props.classes.appBarShift)}>
+          <Toolbar className={this.props.classes.toolbar}>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="Open drawer"
+              onClick={this.handleDrawerOpen}
+              className={clsx(this.props.classes.menuButton, this.state.open && this.props.classes.menuButtonHidden)}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography component="h1" variant="h6" color="inherit" noWrap className={this.props.classes.title}>
+              Documents
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Drawer
+          variant="permanent"
+          classes={{
+            paper: clsx(this.props.classes.drawerPaper, !this.state.open && this.props.classes.drawerPaperClose),
+          }}
+          open={this.state.open}
+        >
+          <div className={this.props.classes.toolbarIcon}>
+            <IconButton onClick={this.handleDrawerClose}>
+              <ChevronLeftIcon />
+            </IconButton>
+          </div>
+          <Divider />
+          <List>
+            <ListItem button component={Link} to="/">
+              <ListItemIcon>
+                <SearchIcon />
+              </ListItemIcon>
+              <ListItemText primary="Recherche" />
+            </ListItem>
+            <ListItem button component={Link} to="/settings">
+              <ListItemIcon>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Paramétrage" />
+            </ListItem>
+          </List>
+          <Divider />
+          <List>{secondaryListItems}</List>
+        </Drawer>
+        <main className={this.props.classes.content}>
+          <div className={this.props.classes.appBarSpacer} />
+          <Container maxWidth="lg" className={this.props.classes.container}>
+            <Grid container spacing={3}>
+              {/* Recent Orders */}
+              <Grid item xs={12}>
+                  <Route path="/" exact 
+                    component={() => <Search />} />
+                  <Route path="/settings/" component={Settings} />
+                  <Route path="/preview" component={Preview} />
+              </Grid>
+            </Grid>
+          </Container>
+        </main>
+      </div>
+      </ThemeProvider>
+      </Router>
+    );
+  }
+}
+
+export default withStyles(styles)(App);
