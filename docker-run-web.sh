@@ -3,4 +3,4 @@
 docker run -p 81:80 \
  -d \
  -e API_URL=http://beebox02:9000/api \
- grozeille/document-analysis-web:1.7
+ grozeille/document-analysis-web:1.8
