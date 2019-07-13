@@ -124,6 +124,15 @@ public class DocumentController {
             document.setUrl(d.get("path_descendent_path").toString());
             document.setUrlTxt(document.getUrl());
 
+            Collection<Object> tags = d.getFieldValues("tags_ss");
+            List<String> documentTags = new ArrayList<>();
+            if(tags != null) {
+                for(Object t : tags) {
+                    documentTags.add(t.toString());
+                }
+            }
+            document.setTags(documentTags.toArray(new String[0]));
+
             resultMap.put(d.get("id").toString(), document);
         }
 
@@ -179,6 +188,16 @@ public class DocumentController {
             document.setUrlTxt(document.getUrl());
             document.setBody("");
 
+            Collection<Object> tags = d.getFieldValues("tags_ss");
+            List<String> documentTags = new ArrayList<>();
+            if(tags != null) {
+                for(Object t : tags) {
+                    documentTags.add(t.toString());
+                }
+            }
+            document.setTags(documentTags.toArray(new String[0]));
+
+
             return ResponseEntity.ok(document);
         } catch(SolrServerException e) {
             return ResponseEntity.notFound().build();
@@ -187,8 +206,34 @@ public class DocumentController {
     }
 
     @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE,
-            method = RequestMethod.GET,
-            value = "/{id}/same")
+            method = RequestMethod.POST,
+            value = "/{id}/tags")
+    public @ResponseBody ResponseEntity<?> updateTags(@PathVariable String id, @RequestBody String[] tags) throws IOException, SolrServerException {
+        try {
+            SolrDocument d = solrOperations.getSolrClient().getById("mycore", id);
+
+            SolrInputDocument inputDocument = new SolrInputDocument();
+            for (String fieldName : d.getFieldNames()) {
+                inputDocument.addField(fieldName, d.getFieldValue(fieldName));
+            }
+
+            inputDocument.removeField("tags_ss");
+            for(String t : tags) {
+                inputDocument.addField("tags_ss", t);
+            }
+
+            solrOperations.getSolrClient().add("mycore", inputDocument);
+            solrOperations.commit("mycore");
+
+            return ResponseEntity.ok().build();
+        } catch(SolrServerException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE,
+        method = RequestMethod.GET,
+        value = "/{id}/same")
     public @ResponseBody ResponseEntity<SearchResult> getSameDocument(@PathVariable String id) throws IOException, SolrServerException {
 
         try {
@@ -206,6 +251,15 @@ public class DocumentController {
                 document.setUrl(d.get("path_descendent_path").toString());
                 document.setUrlTxt(document.getUrl());
                 document.setBody("");
+
+                Collection<Object> tags = d.getFieldValues("tags_ss");
+                List<String> documentTags = new ArrayList<>();
+                if(tags != null) {
+                    for(Object t : tags) {
+                        documentTags.add(t.toString());
+                    }
+                }
+                document.setTags(documentTags.toArray(new String[0]));
 
                 if(!document.getId().equalsIgnoreCase(id)) {
                     documents.add(document);

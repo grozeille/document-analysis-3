@@ -13,6 +13,7 @@ export class SearchResultItem {
   urlTxt: string;
   name: string;
   body: string;
+  tags: Array<string>;
 
   constructor() {
     this.id = "";
@@ -20,5 +21,6 @@ export class SearchResultItem {
     this.urlTxt = "";
     this.name = "";
     this.body = "";
+    this.tags = new Array<string>();
   }
 }

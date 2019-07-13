@@ -6,6 +6,8 @@ import { withStyles } from '@material-ui/styles';
 import { Theme } from "@material-ui/core";
 import Fab from '@material-ui/core/Fab';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
+import TextField from '@material-ui/core/TextField';
+import Chip from '@material-ui/core/Chip';
 
 const styles = (theme: Theme) => ({
   searchTitle: {
@@ -36,6 +38,9 @@ const styles = (theme: Theme) => ({
   searchItem: {
     paddingTop: "30px",
   },
+  chip: {
+    margin: theme.spacing(0.5),
+  },
 });
 
 interface PreviewState {
@@ -45,6 +50,8 @@ interface PreviewState {
 }
 
 class Preview extends React.Component<any, PreviewState> {
+
+  private newTagInput?: HTMLInputElement = undefined;
 
   constructor(props: any){
     super(props);
@@ -62,6 +69,50 @@ class Preview extends React.Component<any, PreviewState> {
     const id = params.get('id');
 
     this.refresh(id!);
+  }
+
+  private handleDelete(tag: string){
+    this.setState(state => {
+      var searchResultItem = state.searchResultItem;
+      searchResultItem.tags = searchResultItem.tags.filter(t => t !== tag);
+      
+      return {
+        searchResultItem
+      }
+    }, () => {
+      fetch("/api/v1/documents/" + this.state.id + "/tags", {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(this.state.searchResultItem.tags)
+      });
+    });
+  }
+
+  private handleSearchAddTag(e: React.KeyboardEvent<HTMLElement | HTMLTextAreaElement>) {
+    if( e.key === 'Enter' ){
+      var newTag = this.newTagInput!.value;
+      this.newTagInput!.value = "";
+      this.setState(state => {
+        var searchResultItem = state.searchResultItem;
+        searchResultItem.tags.push(newTag);
+  
+        return {
+          searchResultItem
+        }
+      }, () => {
+        fetch("/api/v1/documents/" + this.state.id + "/tags", {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(this.state.searchResultItem.tags)
+        });
+      });
+    }
   }
 
   refresh(id: string) {
@@ -128,6 +179,25 @@ class Preview extends React.Component<any, PreviewState> {
             <SaveAltIcon/>
             Télécharger
           </Fab>
+        </div>
+        <div>
+          <TextField
+            id="standard-name"
+            label="Ajouter un tag"
+            margin="normal"
+            onKeyDown={ (event) => this.handleSearchAddTag(event) }
+            inputRef={(input:HTMLInputElement ) => { this.newTagInput = input; }} 
+          />
+        </div>
+        <div>
+        {this.state.searchResultItem.tags.map((item: string, key: any) => 
+          <Chip
+          key={item}
+          label={item}
+          className={this.props.classes.chip}
+          onDelete={() => this.handleDelete(item)}
+          />
+        )}
         </div>
         <div className="field similar"><b>Documents avec le même nom: </b></div>
         <div>

@@ -25,7 +25,6 @@ import { ThemeProvider } from '@material-ui/styles';
 import { Theme } from "@material-ui/core";
 import { makeStyles, createMuiTheme, withStyles } from '@material-ui/core/styles';
 import blue from '@material-ui/core/colors/blue';
-import { createBrowserHistory } from 'history';
 import { secondaryListItems } from './SecondaryMenu';
 import Search from './Search';
 import { SearchState } from './Search';
@@ -157,7 +156,7 @@ class App extends React.Component<any, AppState> {
               edge="start"
               color="inherit"
               aria-label="Open drawer"
-              onClick={this.handleDrawerOpen}
+              onClick={() => this.handleDrawerOpen() }
               className={clsx(this.props.classes.menuButton, this.state.open && this.props.classes.menuButtonHidden)}
             >
               <MenuIcon />
@@ -175,7 +174,7 @@ class App extends React.Component<any, AppState> {
           open={this.state.open}
         >
           <div className={this.props.classes.toolbarIcon}>
-            <IconButton onClick={this.handleDrawerClose}>
+            <IconButton onClick={() => this.handleDrawerClose() }>
               <ChevronLeftIcon />
             </IconButton>
           </div>

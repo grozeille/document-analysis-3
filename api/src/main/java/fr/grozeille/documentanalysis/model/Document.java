@@ -13,4 +13,6 @@ public class Document {
     private String urlTxt;
 
     private String body;
+
+    private String[] tags;
 }
