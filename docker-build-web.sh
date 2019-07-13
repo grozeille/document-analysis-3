@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker build -f docker/web/Dockerfile -t grozeille/document-analysis-web:1.6 .
+docker build -f docker/web/Dockerfile -t grozeille/document-analysis-web:1.7 .
