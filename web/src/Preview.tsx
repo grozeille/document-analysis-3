@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom'
 import { SearchResultItem, SearchResult } from './Model'
 import './Preview.css';
 import { withStyles, WithStyles } from '@material-ui/styles';
@@ -10,55 +9,18 @@ import TextField from '@material-ui/core/TextField';
 import Chip from '@material-ui/core/Chip';
 import TextClipboard from './TextClipboard'
 import {RouteComponentProps, withRouter} from "react-router";
+import SearchResultList from './SearchResultList';
 
 const styles = (theme: Theme) => ({
-  searchTitle: {
-    fontSize: "18px",
-    lineHeight: 1.33,
-    textDecoration: "none",
-    cursor: "pointer",
-    color: "rgba(0, 0, 0, 0.87)",
-    textDecorationColor: "rgba(0, 0, 0, 0.87)",
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-    '& em': {
-      backgroundColor: "#ffffcc",
-    },
-  },
-  searchUrl: {
-    color: theme.palette.primary.dark,
-    textDecoration: "none",
-    cursor: "pointer",
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-    '& em': {
-      backgroundColor: "#ffffcc",
-    },
-  },
-  searchItem: {
-    paddingTop: "30px",
-  },
   chip: {
     margin: theme.spacing(0.5),
   },
-  copyLink: {
-    color: theme.palette.text.primary,
-    textDecoration: "none",
-    cursor: "pointer",
-    '&:hover': {
-      borderBottom: "2px dotted rgba(0, 0, 0, 0.50)",
-    }
-  }
 });
 
 interface PreviewState {
   searchResultItem : SearchResultItem;
   sameItems : SearchResult;
   id: string;
-  showCopyTooltipFile: boolean;
-  showCopyTooltipPath: boolean;
 }
 
 interface PreviewProps extends RouteComponentProps, WithStyles<typeof styles> {
@@ -75,8 +37,6 @@ class Preview extends React.Component<PreviewProps, PreviewState> {
       searchResultItem : new SearchResultItem(),
       sameItems: new SearchResult(),
       id: "",
-      showCopyTooltipFile: false,
-      showCopyTooltipPath: false,
     };
     
   }
@@ -87,6 +47,16 @@ class Preview extends React.Component<PreviewProps, PreviewState> {
     const id = params.get('id');
 
     this.refresh(id!);
+  }
+
+  componentDidUpdate(prevProps: PreviewProps, prevState: PreviewState) {
+    if (this.props.location.search !== prevProps.location.search || this.state.id !== prevState.id) {
+
+      const search = this.props.location.search;
+      const params = new URLSearchParams(search);
+      const id = params.get('id');
+      this.refresh(id!);
+    }
   }
 
   private handleDelete(tag: string){
@@ -131,22 +101,6 @@ class Preview extends React.Component<PreviewProps, PreviewState> {
         });
       });
     }
-  }
-
-  private handleTooltipFileClose() {
-    this.setState({ showCopyTooltipFile: false });
-  }
-
-  private handleTooltipFileOpen() {
-    this.setState({ showCopyTooltipFile: true });
-  }
-
-  private handleTooltipPathClose() {
-    this.setState({ showCopyTooltipPath: false });
-  }
-
-  private handleTooltipPathOpen() {
-    this.setState({ showCopyTooltipPath: true });
   }
 
   refresh(id: string) {
@@ -239,20 +193,7 @@ class Preview extends React.Component<PreviewProps, PreviewState> {
         </div>
         <div className="field similar"><b>Documents avec le même nom: </b></div>
         <div>
-          {this.state.sameItems.documents.map((item: SearchResultItem, key: any) =>
-              <div className={this.props.classes.searchItem} key={key}>
-                <div><Link 
-                  onClick={ (event) => this.refresh(item.id) }
-                  to={"/preview?id="+item.id} 
-                  className={this.props.classes.searchTitle} 
-                  dangerouslySetInnerHTML={{ __html: item.name }} /></div>
-                <div><Link 
-                  onClick={ (event) => this.refresh(item.id) }
-                  to={"/preview?id="+item.id} 
-                  className={this.props.classes.searchUrl} 
-                  dangerouslySetInnerHTML={{ __html: item.urlTxt }} /></div>
-              </div>
-          )}  
+          <SearchResultList items={this.state.sameItems.documents} />
         </div>
       </div>
     )

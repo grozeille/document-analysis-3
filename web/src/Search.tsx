@@ -2,7 +2,6 @@ import React from 'react';
 import { withStyles, WithStyles } from '@material-ui/styles';
 import { Theme } from "@material-ui/core";
 import './Search.css';
-import { Link } from 'react-router-dom'
 import {RouteComponentProps, withRouter} from "react-router";
 
 import Paper from '@material-ui/core/Paper';
@@ -14,6 +13,7 @@ import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 import { createBrowserHistory } from 'history';
 
 import { SearchResultItem, SearchResult } from './Model'
+import SearchResultList from './SearchResultList';
 
 const history = createBrowserHistory();
 
@@ -35,40 +35,6 @@ const styles = (theme: Theme) => ({
     width: 1,
     height: 28,
     margin: 4,
-  },
-  searchTitle: {
-    fontSize: "18px",
-    lineHeight: 1.33,
-    textDecoration: "none",
-    cursor: "pointer",
-    color: "rgba(0, 0, 0, 0.87)",
-    textDecorationColor: "rgba(0, 0, 0, 0.87)",
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-    '& em': {
-      backgroundColor: "#ffffcc",
-    },
-  },
-  searchUrl: {
-    color: theme.palette.primary.dark,
-    textDecoration: "none",
-    cursor: "pointer",
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-    '& em': {
-      backgroundColor: "#ffffcc",
-    },
-  },
-  searchText: {
-    color: "#545454",
-    '& em': {
-      backgroundColor: "#ffffcc",
-    },
-  },
-  searchItem: {
-    paddingTop: "30px",
   },
   searchMessage: {
     fontSize: "12px",
@@ -138,13 +104,7 @@ class Search extends React.Component<SearchProps, SearchState> {
         <div className={this.props.classes.searchMessage}>{this.state.searchMessage}</div>
         {this.state.searchResultItems.map((page: Array<SearchResultItem>, pageKey: any) =>
           <div key={pageKey}>
-          {page.map((item: SearchResultItem, key: any) =>
-              <div className={this.props.classes.searchItem} key={key}>
-                <div><Link to={"/preview?id="+item.id} className={this.props.classes.searchTitle} dangerouslySetInnerHTML={{ __html: item.name }} /></div>
-                <div><Link to={"/preview?id="+item.id} className={this.props.classes.searchUrl} dangerouslySetInnerHTML={{ __html: item.urlTxt }} /></div>
-                <div className={this.props.classes.searchText} dangerouslySetInnerHTML={{ __html: item.body }}></div>
-              </div>
-          )}
+            <SearchResultList items={page} />
           </div>
         )}
         { this.state.showMore && 

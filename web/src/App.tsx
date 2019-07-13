@@ -23,12 +23,10 @@ import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '@material-ui/icons/Settings';
 import { ThemeProvider } from '@material-ui/styles';
 import { Theme } from "@material-ui/core";
-import { makeStyles, createMuiTheme, withStyles } from '@material-ui/core/styles';
+import { createMuiTheme, withStyles } from '@material-ui/core/styles';
 import blue from '@material-ui/core/colors/blue';
 import { secondaryListItems } from './SecondaryMenu';
 import Search from './Search';
-import { SearchState } from './Search';
-import { SearchResultItem, SearchResult } from './Model'
 import Settings from './Settings';
 import Preview from './Preview';
 
