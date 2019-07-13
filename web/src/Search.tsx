@@ -1,5 +1,5 @@
 import React from 'react';
-import { withStyles } from '@material-ui/styles';
+import { withStyles, WithStyles } from '@material-ui/styles';
 import { Theme } from "@material-ui/core";
 import './Search.css';
 import { Link } from 'react-router-dom'
@@ -84,8 +84,9 @@ export interface SearchState {
   currentPage: number;
   searchQuery: string;
 }
-interface SearchProps extends RouteComponentProps {
-  classes: any;
+
+interface SearchProps extends RouteComponentProps, WithStyles<typeof styles> {
+  
 }
 
 

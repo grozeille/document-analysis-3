@@ -2,12 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom'
 import { SearchResultItem, SearchResult } from './Model'
 import './Preview.css';
-import { withStyles } from '@material-ui/styles';
+import { withStyles, WithStyles } from '@material-ui/styles';
 import { Theme } from "@material-ui/core";
 import Fab from '@material-ui/core/Fab';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
 import TextField from '@material-ui/core/TextField';
 import Chip from '@material-ui/core/Chip';
+import TextClipboard from './TextClipboard'
+import {RouteComponentProps, withRouter} from "react-router";
 
 const styles = (theme: Theme) => ({
   searchTitle: {
@@ -41,24 +43,40 @@ const styles = (theme: Theme) => ({
   chip: {
     margin: theme.spacing(0.5),
   },
+  copyLink: {
+    color: theme.palette.text.primary,
+    textDecoration: "none",
+    cursor: "pointer",
+    '&:hover': {
+      borderBottom: "2px dotted rgba(0, 0, 0, 0.50)",
+    }
+  }
 });
 
 interface PreviewState {
   searchResultItem : SearchResultItem;
   sameItems : SearchResult;
   id: string;
+  showCopyTooltipFile: boolean;
+  showCopyTooltipPath: boolean;
 }
 
-class Preview extends React.Component<any, PreviewState> {
+interface PreviewProps extends RouteComponentProps, WithStyles<typeof styles> {
+
+}
+
+class Preview extends React.Component<PreviewProps, PreviewState> {
 
   private newTagInput?: HTMLInputElement = undefined;
 
-  constructor(props: any){
+  constructor(props: PreviewProps){
     super(props);
     this.state = { 
       searchResultItem : new SearchResultItem(),
       sameItems: new SearchResult(),
       id: "",
+      showCopyTooltipFile: false,
+      showCopyTooltipPath: false,
     };
     
   }
@@ -115,6 +133,22 @@ class Preview extends React.Component<any, PreviewState> {
     }
   }
 
+  private handleTooltipFileClose() {
+    this.setState({ showCopyTooltipFile: false });
+  }
+
+  private handleTooltipFileOpen() {
+    this.setState({ showCopyTooltipFile: true });
+  }
+
+  private handleTooltipPathClose() {
+    this.setState({ showCopyTooltipPath: false });
+  }
+
+  private handleTooltipPathOpen() {
+    this.setState({ showCopyTooltipPath: true });
+  }
+
   refresh(id: string) {
     var url =  "/api/v1/documents/" + id;
 
@@ -167,18 +201,11 @@ class Preview extends React.Component<any, PreviewState> {
   render() {
     return (
       <div>
-        <div className="field"><b>Nom du fichier: </b>{this.state.searchResultItem.name}</div>
-        <div className="field"><b>Chemin: </b>{this.state.searchResultItem.url}</div>
-        <div style={{ textAlign: "center", margin: "auto", marginTop: "20px"}}>
-          <Fab
-            variant="extended"
-            size="medium"
-            color="primary"
-            aria-label="More"
-          >
-            <SaveAltIcon/>
-            Télécharger
-          </Fab>
+        <div className="field"><b>Nom du fichier: </b> 
+          <TextClipboard text={this.state.searchResultItem.name}></TextClipboard>
+        </div>
+        <div className="field"><b>Chemin: </b>
+          <TextClipboard text={this.state.searchResultItem.url}></TextClipboard>
         </div>
         <div>
           <TextField
@@ -198,6 +225,17 @@ class Preview extends React.Component<any, PreviewState> {
           onDelete={() => this.handleDelete(item)}
           />
         )}
+        </div>
+        <div style={{ textAlign: "center", margin: "auto", marginTop: "20px"}}>
+          <Fab
+            variant="extended"
+            size="medium"
+            color="primary"
+            aria-label="More"
+          >
+            <SaveAltIcon/>
+            Télécharger
+          </Fab>
         </div>
         <div className="field similar"><b>Documents avec le même nom: </b></div>
         <div>
@@ -219,7 +257,7 @@ class Preview extends React.Component<any, PreviewState> {
       </div>
     )
   }
-
+  
 }
 
-export default withStyles(styles)(Preview);
+export default withRouter(withStyles(styles)(Preview));
