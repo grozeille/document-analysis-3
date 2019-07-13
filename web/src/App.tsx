@@ -1,34 +1,38 @@
 import React from 'react';
 import clsx from 'clsx';
+import { withStyles, createMuiTheme } from '@material-ui/core/styles';
+import { WithStyles, ThemeProvider } from '@material-ui/styles';
+import { Theme } from "@material-ui/core";
 
-import './App.css';
+import blue from '@material-ui/core/colors/blue';
 
 import { BrowserRouter as Router, Route, Link } from 'react-router-dom';
-import CssBaseline from '@material-ui/core/CssBaseline';
+
 import Drawer from '@material-ui/core/Drawer';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import List from '@material-ui/core/List';
+import CssBaseline from '@material-ui/core/CssBaseline';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
-import Container from '@material-ui/core/Container';
-import Grid from '@material-ui/core/Grid';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
 import MenuIcon from '@material-ui/icons/Menu';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
+import InboxIcon from '@material-ui/icons/MoveToInbox';
+import MailIcon from '@material-ui/icons/Mail';
+import Container from '@material-ui/core/Container';
+import Grid from '@material-ui/core/Grid';
 import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '@material-ui/icons/Settings';
-import { ThemeProvider } from '@material-ui/styles';
-import { Theme } from "@material-ui/core";
-import { createMuiTheme, withStyles } from '@material-ui/core/styles';
-import blue from '@material-ui/core/colors/blue';
-import { secondaryListItems } from './SecondaryMenu';
+
 import Search from './Search';
 import Settings from './Settings';
 import Preview from './Preview';
+import { secondaryListItems } from './SecondaryMenu';
 
 const theme = createMuiTheme({
   palette: {
@@ -43,9 +47,6 @@ const styles = (theme: Theme) => ({
     display: 'flex',
   },
   toolbar: {
-    paddingRight: 24, // keep right padding when drawer closed
-  },
-  toolbarIcon: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -70,52 +71,37 @@ const styles = (theme: Theme) => ({
   menuButton: {
     marginRight: 36,
   },
-  menuButtonHidden: {
+  hide: {
     display: 'none',
   },
-  title: {
-    flexGrow: 1,
-  },
-  appBarSpacer: theme.mixins.toolbar,
-  content: {
-    flexGrow: 1,
-    height: '100vh',
-    overflow: 'auto',
-  },
-  fixedHeight: {
-    height: 240,
-  },
-  drawerPaper: {
-    position: "relative" as 'relative',
+  drawer: {
+    width: drawerWidth,
+    flexShrink: 0,
     whiteSpace: 'nowrap' as 'nowrap',
+  },
+  drawerOpen: {
     width: drawerWidth,
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
   },
-  drawerPaperClose: {
-    overflowX: 'hidden' as 'hidden',
+  drawerClose: {
     transition: theme.transitions.create('width', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
-    width: theme.spacing(7),
+    overflowX: 'hidden' as 'hidden',
+    width: theme.spacing(7) + 1,
     [theme.breakpoints.up('sm')]: {
-      width: theme.spacing(9),
+      width: theme.spacing(9) + 1,
     },
   },
-  container: {
-    paddingTop: theme.spacing(4),
-    paddingBottom: theme.spacing(4),
-    overflowScrolling: "touch" as 'touch',
-    WebkitOverflowScrolling: "touch" as 'touch',
-  },
-  paper: {
-    padding: theme.spacing(2),
-    display: 'flex',
-    overflow: 'auto',
-    flexDirection: 'column' as 'column',
+  content: {
+    flexGrow: 1,
+    paddingTop: theme.spacing(3),
+    paddingBottom: theme.spacing(3),
+    //padding: theme.spacing(3),
   },
 });
 
@@ -124,9 +110,13 @@ interface AppState {
   open: boolean;
 }
 
-class App extends React.Component<any, AppState> {
+interface AppProps extends WithStyles<typeof styles> {
 
-  constructor(props: any) {
+}
+
+class App extends React.Component<AppProps, AppState> {
+  
+  constructor(props: AppProps) {
     super(props);
     this.state = { 
       open : false,
@@ -142,38 +132,52 @@ class App extends React.Component<any, AppState> {
   }
 
   render() {
-    
+
     return (
       <Router>
-        <ThemeProvider theme={theme}>
+      <ThemeProvider theme={theme}>
       <div className={this.props.classes.root}>
         <CssBaseline />
-        <AppBar position="absolute" className={clsx(this.props.classes.appBar, this.state.open && this.props.classes.appBarShift)}>
-          <Toolbar className={this.props.classes.toolbar}>
+        <AppBar
+          position="fixed"
+          className={clsx(this.props.classes.appBar, {
+            [this.props.classes.appBarShift]: this.state.open,
+          })}
+        >
+          <Toolbar>
             <IconButton
-              edge="start"
               color="inherit"
               aria-label="Open drawer"
               onClick={() => this.handleDrawerOpen() }
-              className={clsx(this.props.classes.menuButton, this.state.open && this.props.classes.menuButtonHidden)}
+              edge="start"
+              className={clsx(this.props.classes.menuButton, {
+                [this.props.classes.hide]: this.state.open,
+              })}
             >
               <MenuIcon />
             </IconButton>
-            <Typography component="h1" variant="h6" color="inherit" noWrap className={this.props.classes.title}>
+            <Typography variant="h6" noWrap>
               Documents
             </Typography>
           </Toolbar>
         </AppBar>
         <Drawer
           variant="permanent"
+          className={clsx(this.props.classes.drawer, {
+            [this.props.classes.drawerOpen]: this.state.open,
+            [this.props.classes.drawerClose]: !this.state.open,
+          })}
           classes={{
-            paper: clsx(this.props.classes.drawerPaper, !this.state.open && this.props.classes.drawerPaperClose),
+            paper: clsx({
+              [this.props.classes.drawerOpen]: this.state.open,
+              [this.props.classes.drawerClose]: !this.state.open,
+            }),
           }}
           open={this.state.open}
         >
-          <div className={this.props.classes.toolbarIcon}>
+          <div className={this.props.classes.toolbar}>
             <IconButton onClick={() => this.handleDrawerClose() }>
-              <ChevronLeftIcon />
+              {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
             </IconButton>
           </div>
           <Divider />
@@ -195,8 +199,8 @@ class App extends React.Component<any, AppState> {
           <List>{secondaryListItems}</List>
         </Drawer>
         <main className={this.props.classes.content}>
-          <div className={this.props.classes.appBarSpacer} />
-          <Container maxWidth="lg" className={this.props.classes.container}>
+          <div className={this.props.classes.toolbar} />
+          <Container maxWidth="lg">
             <Grid container spacing={3}>
               {/* Recent Orders */}
               <Grid item xs={12}>
