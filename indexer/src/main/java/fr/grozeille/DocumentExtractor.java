@@ -330,7 +330,6 @@ public class DocumentExtractor {
             }
         }
 
-        // special case for PDF: parse images inside (ocr)
         if("pdf".equalsIgnoreCase(extension)){
 
             try {

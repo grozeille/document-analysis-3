@@ -68,6 +68,8 @@ public class DocumentController {
 
         final int pageSize = 20;
 
+        query = query.toLowerCase();
+
         String queryTranslated = translationCache.get(query);
         if(Strings.isNullOrEmpty(queryTranslated)) {
             // translate query EN to SV
