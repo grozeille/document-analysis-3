@@ -47,7 +47,7 @@ public class DocumentIndexer {
             // oops, something went wrong
             System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp( "DetectLang", options );
+            formatter.printHelp( "DocumentIndexer", options );
 
             System.exit(-1);
         }

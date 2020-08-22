@@ -71,7 +71,7 @@ public class DocumentExtractor {
             // oops, something went wrong
             System.err.println( "Parsing failed.  Reason: " + exp.getMessage() );
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp( "DetectLang", options );
+            formatter.printHelp( "DocumentExtractor", options );
 
             System.exit(-1);
         }
