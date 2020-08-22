@@ -33,31 +33,6 @@ public class ApplicationContextConfiguration {
         return  httpSolrClient;
     }
 
-    @Bean(destroyMethod = "close")
-    public DB translationDB() {
-        DB db = null;
-        try {
-            db = DBMaker
-                    .fileDB(configuration.getTranslationCacheFilePath())
-                    .fileMmapEnable()
-                    .make();
-            db.commit();
-            return db;
-        }catch(org.mapdb.DBException dbe) {
-            log.error("Unable to create cache db: "+dbe.getMessage(), dbe);
-            File file = new File(configuration.getTranslationCacheFilePath());
-            if(file.exists()){
-                file.delete();
-            }
-            db = DBMaker
-                    .fileDB(configuration.getTranslationCacheFilePath())
-                    .fileMmapEnable()
-                    .make();
-            db.commit();
-            return db;
-        }
-    }
-
     @Bean
     public SolrOperations solrTemplate() {
         return new SolrTemplate(solrClient());

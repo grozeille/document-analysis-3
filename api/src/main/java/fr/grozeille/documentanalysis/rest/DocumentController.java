@@ -1,8 +1,5 @@
 package fr.grozeille.documentanalysis.rest;
 
-import com.google.cloud.translate.Translate;
-import com.google.cloud.translate.TranslateOptions;
-import com.google.cloud.translate.Translation;
 import com.google.common.base.Strings;
 import fr.grozeille.documentanalysis.model.Document;
 import fr.grozeille.documentanalysis.model.SearchResult;
@@ -39,23 +36,14 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/api/v1/documents")
 public class DocumentController {
 
+    public static final String COLLECTION = "documents";
     @Autowired
     private SolrOperations solrOperations;
 
-    @Autowired
-    private DB db;
-
     private ConcurrentMap<String, String> translationCache;
-
-    private Translate translate;
 
     @PostConstruct
     public void init() {
-        translate = TranslateOptions.getDefaultInstance().getService();
-
-        translationCache = db
-                .hashMap("translationCache", Serializer.STRING, Serializer.STRING)
-                .createOrOpen();
     }
 
     @ApiOperation(
@@ -70,40 +58,13 @@ public class DocumentController {
 
         query = query.toLowerCase();
 
-        String queryTranslated = translationCache.get(query);
-        if(Strings.isNullOrEmpty(queryTranslated)) {
-            // translate query EN to SV
-            Translation translation =
-                    translate.translate(
-                            query,
-                            Translate.TranslateOption.sourceLanguage("en"),
-                            Translate.TranslateOption.targetLanguage("sv"),
-                            // Use "base" for standard edition, "nmt" for the premium model.
-                            Translate.TranslateOption.model("nmt"),
-                            Translate.TranslateOption.format("text"));
-
-            queryTranslated = translation.getTranslatedText();
-
-            // bug in google side ?
-            // https://stackoverflow.com/questions/40505999/getting-weird-markup-from-google-translate-like-pos-trunc
-            queryTranslated = queryTranslated.replace("~~POS=HEADCOMP", "");
-            queryTranslated = queryTranslated.replace("~~POS=TRUNC", "");
-
-            translationCache.putIfAbsent(query, queryTranslated);
-            db.commit();
-            log.info("Google Translation of "+query+": "+queryTranslated);
-        }
-        else {
-            log.info("Translation from cache of "+query+": "+queryTranslated);
-        }
-
-        String bodyQuery = "body_txt_en:"+query+" OR body_txt_sv:"+queryTranslated;
-        String nameQuery = "name_txt:"+query+" OR name_txt:"+queryTranslated;
-        String pathQuery = "path_txt:"+query+" OR path_txt:"+queryTranslated;
+        String bodyQuery = "body_txt_en:"+query+" OR body_txt_fr:"+query;;
+        String nameQuery = "name_txt:"+query;
+        String pathQuery = "path_txt:"+query;
 
         SolrQuery solrQuery = new SolrQuery(String.join(" OR ", Arrays.asList(bodyQuery, nameQuery, pathQuery)));
         solrQuery.addHighlightField("body_txt_en");
-        solrQuery.addHighlightField("body_txt_sv");
+        //solrQuery.addHighlightField("body_txt_sv");
         solrQuery.addHighlightField("name_txt");
         solrQuery.addHighlightField("path_txt");
         solrQuery.setHighlight(true);
@@ -111,11 +72,11 @@ public class DocumentController {
         // priority to name and path
         solrQuery.set("defType","edismax");
         solrQuery.set("bq",String.join(" OR ", Arrays.asList(nameQuery, pathQuery)));
-        solrQuery.set("qf","body_txt_en^1.0 body_txt_sv^1.0 name_txt^4.0 path_txt^3.0");
+        solrQuery.set("qf","body_txt_en^1.0 body_txt_fr^1.0 name_txt^4.0 path_txt^3.0");
         solrQuery.setStart(page * pageSize);
         solrQuery.setRows(pageSize);
 
-        QueryResponse response = solrOperations.getSolrClient().query("mycore", solrQuery);
+        QueryResponse response = solrOperations.getSolrClient().query(COLLECTION, solrQuery);
 
         Map<String, Document> resultMap = new LinkedHashMap<>();
         for(SolrDocument d : response.getResults()) {
@@ -145,7 +106,7 @@ public class DocumentController {
                 document.setBody(highlights.get(0));
             }
             else {
-                highlights = h.getValue().get("body_txt_sv");
+                highlights = h.getValue().get("body_txt_fr");
                 if(highlights != null && !highlights.isEmpty()) {
                     document.setBody(highlights.get(0));
                 }
@@ -180,7 +141,7 @@ public class DocumentController {
     public @ResponseBody ResponseEntity<Document> getDocument(@PathVariable String id) throws IOException, SolrServerException {
 
         try {
-            SolrDocument d = solrOperations.getSolrClient().getById("mycore", id);
+            SolrDocument d = solrOperations.getSolrClient().getById(COLLECTION, id);
 
             Document document = new Document();
             document.setId(d.get("id").toString());
@@ -212,7 +173,7 @@ public class DocumentController {
             value = "/{id}/tags")
     public @ResponseBody ResponseEntity<?> updateTags(@PathVariable String id, @RequestBody String[] tags) throws IOException, SolrServerException {
         try {
-            SolrDocument d = solrOperations.getSolrClient().getById("mycore", id);
+            SolrDocument d = solrOperations.getSolrClient().getById(COLLECTION, id);
 
             SolrInputDocument inputDocument = new SolrInputDocument();
             for (String fieldName : d.getFieldNames()) {
@@ -224,8 +185,8 @@ public class DocumentController {
                 inputDocument.addField("tags_ss", t);
             }
 
-            solrOperations.getSolrClient().add("mycore", inputDocument);
-            solrOperations.commit("mycore");
+            solrOperations.getSolrClient().add(COLLECTION, inputDocument);
+            solrOperations.commit(COLLECTION);
 
             return ResponseEntity.ok().build();
         } catch(SolrServerException e) {
@@ -239,10 +200,10 @@ public class DocumentController {
     public @ResponseBody ResponseEntity<SearchResult> getSameDocument(@PathVariable String id) throws IOException, SolrServerException {
 
         try {
-            SolrDocument foundDocument = solrOperations.getSolrClient().getById("mycore", id);
+            SolrDocument foundDocument = solrOperations.getSolrClient().getById(COLLECTION, id);
 
             SolrQuery solrQuery = new SolrQuery("name_s:\""+foundDocument.getFieldValue("name_s").toString()+"\"");
-            QueryResponse response = solrOperations.getSolrClient().query("mycore", solrQuery);
+            QueryResponse response = solrOperations.getSolrClient().query(COLLECTION, solrQuery);
 
             List<Document> documents = new ArrayList<>();
             for(SolrDocument d : response.getResults()) {
