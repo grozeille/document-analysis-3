@@ -7,4 +7,4 @@ server:
 
 document-analysis:
   solr-url: ${SOLR_URL}
-  translation-cache-file-path: ${TRANSLATION_CACHE_PATH}
+  solr-index: documents
