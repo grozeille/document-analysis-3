@@ -9,4 +9,8 @@ import org.springframework.context.annotation.Configuration;
 @Data
 public class ApplicationConfiguration {
     private String solrUrl;
+
+    private String solrIndex;
+
+    private String indexerPath;
 }

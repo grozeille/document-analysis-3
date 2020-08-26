@@ -1,8 +1,9 @@
 package fr.grozeille.documentanalysis.rest;
 
-import com.google.common.base.Strings;
+import fr.grozeille.documentanalysis.ApplicationConfiguration;
 import fr.grozeille.documentanalysis.model.Document;
 import fr.grozeille.documentanalysis.model.SearchResult;
+import fr.grozeille.documentanalysis.service.DocumentIndexer;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -10,22 +11,14 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.mapdb.DB;
-import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.solr.core.SolrOperations;
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -36,11 +29,14 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/api/v1/documents")
 public class DocumentController {
 
-    public static final String COLLECTION = "documents";
+    @Autowired
+    private ApplicationConfiguration configuration;
+
     @Autowired
     private SolrOperations solrOperations;
 
-    private ConcurrentMap<String, String> translationCache;
+    @Autowired
+    private DocumentIndexer documentIndexer;
 
     @PostConstruct
     public void init() {
@@ -76,7 +72,7 @@ public class DocumentController {
         solrQuery.setStart(page * pageSize);
         solrQuery.setRows(pageSize);
 
-        QueryResponse response = solrOperations.getSolrClient().query(COLLECTION, solrQuery);
+        QueryResponse response = solrOperations.getSolrClient().query(this.configuration.getSolrIndex(), solrQuery);
 
         Map<String, Document> resultMap = new LinkedHashMap<>();
         for(SolrDocument d : response.getResults()) {
@@ -141,7 +137,7 @@ public class DocumentController {
     public @ResponseBody ResponseEntity<Document> getDocument(@PathVariable String id) throws IOException, SolrServerException {
 
         try {
-            SolrDocument d = solrOperations.getSolrClient().getById(COLLECTION, id);
+            SolrDocument d = solrOperations.getSolrClient().getById(this.configuration.getSolrIndex(), id);
 
             Document document = new Document();
             document.setId(d.get("id").toString());
@@ -173,7 +169,7 @@ public class DocumentController {
             value = "/{id}/tags")
     public @ResponseBody ResponseEntity<?> updateTags(@PathVariable String id, @RequestBody String[] tags) throws IOException, SolrServerException {
         try {
-            SolrDocument d = solrOperations.getSolrClient().getById(COLLECTION, id);
+            SolrDocument d = solrOperations.getSolrClient().getById(this.configuration.getSolrIndex(), id);
 
             SolrInputDocument inputDocument = new SolrInputDocument();
             for (String fieldName : d.getFieldNames()) {
@@ -185,8 +181,8 @@ public class DocumentController {
                 inputDocument.addField("tags_ss", t);
             }
 
-            solrOperations.getSolrClient().add(COLLECTION, inputDocument);
-            solrOperations.commit(COLLECTION);
+            solrOperations.getSolrClient().add(this.configuration.getSolrIndex(), inputDocument);
+            solrOperations.commit(this.configuration.getSolrIndex());
 
             return ResponseEntity.ok().build();
         } catch(SolrServerException e) {
@@ -200,10 +196,10 @@ public class DocumentController {
     public @ResponseBody ResponseEntity<SearchResult> getSameDocument(@PathVariable String id) throws IOException, SolrServerException {
 
         try {
-            SolrDocument foundDocument = solrOperations.getSolrClient().getById(COLLECTION, id);
+            SolrDocument foundDocument = solrOperations.getSolrClient().getById(this.configuration.getSolrIndex(), id);
 
             SolrQuery solrQuery = new SolrQuery("name_s:\""+foundDocument.getFieldValue("name_s").toString()+"\"");
-            QueryResponse response = solrOperations.getSolrClient().query(COLLECTION, solrQuery);
+            QueryResponse response = solrOperations.getSolrClient().query(this.configuration.getSolrIndex(), solrQuery);
 
             List<Document> documents = new ArrayList<>();
             for(SolrDocument d : response.getResults()) {
@@ -239,4 +235,18 @@ public class DocumentController {
         }
 
     }
+
+    @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE,
+            method = RequestMethod.POST,
+            value = "/index")
+    public void index(@RequestParam  String path) throws IOException, InterruptedException, SolrServerException {
+        long startDate = System.currentTimeMillis();
+
+        documentIndexer.indexPath(path, this.configuration.getSolrIndex());
+
+        long executionTime = System.currentTimeMillis()-startDate;
+
+        log.info("Index finished in " + (executionTime / 1000.0) + " sec");
+    }
+
 }

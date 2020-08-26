@@ -196,7 +196,6 @@ class App extends React.Component<AppProps, AppState> {
             </ListItem>
           </List>
           <Divider />
-          <List>{secondaryListItems}</List>
         </Drawer>
         <main className={this.props.classes.content}>
           <div className={this.props.classes.toolbar} />
